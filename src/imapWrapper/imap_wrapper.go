@@ -34,7 +34,7 @@ func (obj *ImapWrapper) Connect() bool {
   }
 
 
-  fmt.Println("Connsected to IMAP server:", obj.Client.Data[0].Info)
+  fmt.Println("Connected to IMAP server:", obj.Client.Data[0].Info)
   return true
 }
 
