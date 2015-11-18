@@ -6,6 +6,12 @@ import (
   "github.com/mxk/go-imap/imap"
 )
 
+type IWMessage struct {
+  Uid uint32
+  Header []byte
+  Body []byte
+}
+
 type ImapWrapper struct {
   Client *imap.Client
   Command *imap.Command
@@ -68,7 +74,8 @@ func (obj *ImapWrapper) FetchAllMessages() bool {
   return true
 }
 
-func init() {}
+func init() {
+}
 
 func Create(config string) *ImapWrapper {
   newClient := ImapWrapper{}

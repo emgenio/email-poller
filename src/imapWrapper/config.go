@@ -11,6 +11,7 @@ type ImapWrapperConfig struct {
   Hostname string
   User string
   Password string
+  Mbox string
 }
 
 func (obj *ImapWrapper) loadConfigFromYaml(configPath string) {
