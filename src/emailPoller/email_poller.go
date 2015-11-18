@@ -10,8 +10,8 @@ const (
 )
 
 type emailPoller struct {
-  ImapClient *ImapWrapper
-  MessagesToQ chan[]IWMessage
+  ImapClient *imapWrapper.ImapWrapper
+  MessagesToQ chan[]imapWrapper.IWMessage
 
   error error
 }
@@ -19,15 +19,15 @@ type emailPoller struct {
 func (obj *emailPoller) Initialize() {
   obj.ImapClient.Connect()
   obj.ImapClient.Login()
-  obj.ImapClient.SelectBox(ImapClient.Config.Mbox, false)
+  obj.ImapClient.SelectBox(obj.ImapClient.Config.Mbox, false)
 }
 
 func (obj *emailPoller) PushMessagesToQueue() {
   for {
-    messages <- obj.MessagesToQ
-
+    messages := <- obj.MessagesToQ
     for _, message := range messages {
       // push to RABBIT
+      _ = message
     }
   }
 }
@@ -35,20 +35,20 @@ func (obj *emailPoller) PushMessagesToQueue() {
 func (obj *emailPoller) Start() {
   go obj.PushMessagesToQueue()
 
+  ids := []uint32{}
   for {
-    // wait for incoming messages
-    // fill channel
-    // Tag them as Seen/Deleted
+    ids, _ = obj.ImapClient.ListenIncomingMessages(TimeOut)
+    iwmsg, _ := obj.ImapClient.BuildIWMessagesFromIds(ids)
+    obj.MessagesToQ <- iwmsg
   }
 }
 
 func Stop() {}
-func init {
-}
+func init() {}
 
-func Create(cfg string) {
+func Create(cfg string) (*emailPoller) {
   return &emailPoller{
     ImapClient: imapWrapper.Create(cfg),
-    MessagesToQ: make(chan []IWMessage)
+    MessagesToQ: make(chan []imapWrapper.IWMessage),
   }
 }

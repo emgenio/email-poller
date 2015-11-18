@@ -1,17 +1,15 @@
 package main
 
 import (
-  "imapWrapper"
+  "emailPoller"
 )
 
 func main() {
-  imapClient := imapWrapper.Create("../config.yaml")
+  emailPoller := emailPoller.Create("../config.yaml")
 
-  imapClient.Connect()
-  imapClient.Login()
-  imapClient.SelectBox("INBOX", false) // true for Read only
-  imapClient.FetchAllMessages()
+  emailPoller.Initialize()
+  emailPoller.Start()
   if false {
-    _ = imapClient
+    _ = emailPoller
   }
 }

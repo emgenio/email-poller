@@ -34,7 +34,6 @@ func (obj *ImapWrapper) ReportError(msg string, display bool) bool {
 
 func (obj *ImapWrapper) Connect() bool {
   obj.Client, obj.error = imap.Dial(obj.Config.Hostname)
-
   if obj.ReportError("Error when trying to connect to IMAP server:", true) {
     return false
   }
@@ -74,8 +73,57 @@ func (obj *ImapWrapper) FetchAllMessages() bool {
   return true
 }
 
-func init() {
+func (obj *ImapWrapper) ListenIncomingMessages(timeout time.Duration) ([]uint32, bool) {
+  _, obj.error = obj.Client.Idle()
+  if obj.ReportError("Error When Idling Client:", true) {
+    return nil, false
+  }
+
+  obj.error = obj.Client.Recv(timeout)
+  if obj.ReportError("Error Recv:", true) {
+    return nil, false
+  }
+
+  _, obj.error = imap.Wait(obj.Client.IdleTerm())
+  if obj.ReportError("Error while retrieving response from idle:", true) {
+    return nil, false
+  }
+
+  ids := []uint32{}
+  for _, response := range obj.Client.Data {
+    switch response.Label {
+    case "EXISTS":
+      ids = append(ids, imap.AsNumber(response.Fields[0]))
+    }
+  }
+  return ids, true
 }
+
+func (obj *ImapWrapper) BuildIWMessagesFromIds(ids []uint32) ([]IWMessage, bool) {
+  if len(ids) > 0 {
+    set, _ := imap.NewSeqSet("")
+    set.AddNum(ids...)
+    obj.Command, obj.error = imap.Wait(obj.Client.Fetch(set, "RFC822"))
+    if obj.error != nil {
+      return nil, false
+    }
+
+    messages := []IWMessage{}
+    for _, response := range obj.Command.Data {
+      attrs := response.MessageInfo().Attrs
+      iwmsg := IWMessage{
+        Uid:    imap.AsNumber(attrs["UID"]),
+        Header: imap.AsBytes(attrs["RFC822.HEADER"]),
+        Body:   imap.AsBytes(attrs["RFC822.TEXT"]),
+      }
+      messages = append(messages, iwmsg)
+    }
+    return messages, true
+  }
+  return nil, true
+}
+
+func init() {}
 
 func Create(config string) *ImapWrapper {
   newClient := ImapWrapper{}
