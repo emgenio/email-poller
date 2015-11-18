@@ -8,14 +8,14 @@ import (
 )
 
 type ImapWrapperConfig struct {
-  Host string
+  Hostname string
   User string
   Password string
 }
 
 func (obj *ImapWrapper) loadConfigFromYaml(configPath string) {
   config := ImapWrapperConfig{}
-  filename, _ := filepath.Abs(configPath)
+  filename, err := filepath.Abs(configPath)
   yamlFile, err := ioutil.ReadFile(filename)
 
   if err != nil {
@@ -25,5 +25,5 @@ func (obj *ImapWrapper) loadConfigFromYaml(configPath string) {
   if err != nil {
     log.Fatalf("error: %v", err)
   }
- obj.cfg = &config
+ obj.Config = &config
 }

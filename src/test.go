@@ -1,15 +1,13 @@
 package main
 
 import (
-  "fmt"
   "imapWrapper"
 )
 
 func main() {
   imapClient := imapWrapper.Create("../config.yaml")
 
-  fmt.Printf("test")
-
+  imapClient.Connect()
   if false {
     _ = imapClient
   }
