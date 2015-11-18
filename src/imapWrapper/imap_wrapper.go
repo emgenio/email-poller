@@ -33,7 +33,6 @@ func (obj *ImapWrapper) Connect() bool {
     return false
   }
 
-
   fmt.Println("Connected to IMAP server:", obj.Client.Data[0].Info)
   return true
 }
@@ -41,6 +40,32 @@ func (obj *ImapWrapper) Connect() bool {
 func (obj *ImapWrapper) Disconnect() {
   obj.Command, obj.error = imap.Wait(obj.Client.Logout(30 * time.Second))
   obj.Client.Close(true)
+}
+
+func (obj *ImapWrapper) Login() bool {
+  obj.Command, obj.error = imap.Wait(obj.Client.Login(obj.Config.User, obj.Config.Password))
+  if obj.ReportError("Error Auth to IMAP server:", true) {
+    return false
+  }
+  return true
+}
+
+func (obj *ImapWrapper) SelectBox(mbox string, readonly bool) bool {
+  obj.Command, obj.error = imap.Wait(obj.Client.Select(mbox, readonly))
+  if obj.ReportError("Error Selecting mBox:", true) {
+    return false
+  }
+  return true
+}
+
+func (obj *ImapWrapper) FetchAllMessages() bool {
+  set, _ := imap.NewSeqSet("1:*")
+  obj.Command, obj.error = imap.Wait(obj.Client.UIDFetch(set, "RFC822.HEADER", "RFC822.TEXT"))
+
+  if obj.ReportError("Error while fetching messages:", true) {
+    return false
+  }
+  return true
 }
 
 func init() {}
