@@ -3,6 +3,7 @@ package emailPoller
 import (
   "imapWrapper"
   "time"
+  "fmt"
 )
 
 const (
@@ -25,10 +26,13 @@ func (obj *emailPoller) Initialize() {
 func (obj *emailPoller) PushMessagesToQueue() {
   for {
     messages := <- obj.MessagesToQ
+    cpt := 0
     for _, message := range messages {
       // push to RABBIT
       _ = message
+      cpt += 1
     }
+    fmt.Println("Number of messages that have been push to RabbitMQ:", cpt)
   }
 }
 

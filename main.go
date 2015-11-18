@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-  emailPoller := emailPoller.Create("../config.yaml")
+  emailPoller := emailPoller.Create("./config.yaml")
 
   emailPoller.Initialize()
   emailPoller.Start()
