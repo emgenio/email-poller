@@ -29,7 +29,7 @@ func (obj *emailPoller) PushMessagesToQueue() {
     cpt := 0
     for _, message := range messages {
       // push to RABBIT
-      _ = message
+      message.Display()
       cpt += 1
     }
     fmt.Println("Number of messages that have been push to RabbitMQ:", cpt)
@@ -41,9 +41,22 @@ func (obj *emailPoller) Start() {
 
   ids := []uint32{}
   for {
-    ids, _ = obj.ImapClient.ListenIncomingMessages(TimeOut)
-    iwmsg, _ := obj.ImapClient.BuildIWMessagesFromIds(ids)
-    obj.MessagesToQ <- iwmsg
+    // ids, _ = obj.ImapClient.ListenIncomingMessages(TimeOut)
+    // obj.ImapClient.Client.Idle()
+    // obj.ImapClient.Client.Recv(TimeOut)
+    // imap.Wait(obj.ImapClient.Client.IdleTerm())
+    // iwmsg, _ := obj.ImapClient.BuildIWMessagesFromIds(ids)
+    // obj.ImapClient.ExpungeMessageFromIds(ids)
+    time.Sleep(1 * time.Second)
+    fmt.Println("Waiting for Incoming Messages...")
+    iwmsg, _ := obj.ImapClient.FetchAllMessages()
+    if len(iwmsg) > 0 {
+      obj.MessagesToQ <- iwmsg
+    }
+  }
+
+  if false {
+    _ = ids
   }
 }
 

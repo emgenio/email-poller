@@ -12,6 +12,14 @@ type IWMessage struct {
   Body []byte
 }
 
+func (obj *IWMessage) Display() {
+  fmt.Println("=====================================")
+  fmt.Println("UID:\n", obj.Uid)
+  fmt.Println("SUBJECT:\n", string(obj.Header))
+  fmt.Println("BODY:\n", string(obj.Body))
+  fmt.Println("=====================================")
+}
+
 type ImapWrapper struct {
   Client *imap.Client
   Command *imap.Command
@@ -63,18 +71,36 @@ func (obj *ImapWrapper) SelectBox(mbox string, readonly bool) bool {
   return true
 }
 
-func (obj *ImapWrapper) FetchAllMessages() bool {
+func (obj *ImapWrapper) FetchAllMessages() ([]IWMessage, bool) {
   set, _ := imap.NewSeqSet("1:*")
-  obj.Command, obj.error = imap.Wait(obj.Client.UIDFetch(set, "RFC822.HEADER", "RFC822.TEXT"))
+  obj.Command, _ = obj.Client.UIDFetch(set, "RFC822.HEADER", "RFC822.TEXT")
 
-  if obj.ReportError("Error while fetching messages:", true) {
-    return false
+  set, _ = imap.NewSeqSet("")
+  messages := []IWMessage{}
+  for obj.Command.InProgress() {
+    // Wait for the next response (no timeout)
+    obj.Client.Recv(-1)
+    for _, rsp := range obj.Command.Data {
+      attrs := rsp.MessageInfo().Attrs
+      iwmsg := IWMessage{
+        Uid:    imap.AsNumber(attrs["UID"]),
+        Header: imap.AsBytes(attrs["RFC822.HEADER"]),
+        Body:   imap.AsBytes(attrs["RFC822.TEXT"]),
+      }
+      messages = append(messages, iwmsg)
+      set.AddNum(iwmsg.Uid)
+    }
+    obj.Command.Data = nil
+    obj.Client.Data = nil
   }
-  return true
+
+  obj.Client.UIDStore(set, "+FLAGS", imap.NewFlagSet(`\Deleted`))
+  obj.Client.Expunge(nil)
+  return messages, false
 }
 
 func (obj *ImapWrapper) ListenIncomingMessages(timeout time.Duration) ([]uint32, bool) {
-  _, obj.error = obj.Client.Idle()
+  obj.Command, obj.error = obj.Client.Idle()
   if obj.ReportError("Error When Idling Client:", true) {
     return nil, false
   }
@@ -84,7 +110,7 @@ func (obj *ImapWrapper) ListenIncomingMessages(timeout time.Duration) ([]uint32,
     return nil, false
   }
 
-  _, obj.error = imap.Wait(obj.Client.IdleTerm())
+  obj.Command, obj.error = imap.Wait(obj.Client.IdleTerm())
   if obj.ReportError("Error while retrieving response from idle:", true) {
     return nil, false
   }
@@ -103,7 +129,7 @@ func (obj *ImapWrapper) BuildIWMessagesFromIds(ids []uint32) ([]IWMessage, bool)
   if len(ids) > 0 {
     set, _ := imap.NewSeqSet("")
     set.AddNum(ids...)
-    obj.Command, obj.error = imap.Wait(obj.Client.Fetch(set, "RFC822"))
+    obj.Command, obj.error = imap.Wait(obj.Client.Fetch(set, "RFC822.HEADER", "RFC822.TEXT"))
     if obj.error != nil {
       return nil, false
     }
@@ -118,9 +144,54 @@ func (obj *ImapWrapper) BuildIWMessagesFromIds(ids []uint32) ([]IWMessage, bool)
       }
       messages = append(messages, iwmsg)
     }
+    for obj.Command.InProgress() {
+
+    }
+    obj.Client.Store(set, "+FLAGS", imap.NewFlagSet(`\Deleted`))
+    obj.Client.Expunge(nil)
     return messages, true
   }
   return nil, true
+}
+
+func (obj *ImapWrapper) ExpungeMessageFromIds(ids []uint32) {
+  set, _ := imap.NewSeqSet("")
+  set.AddNum(ids...)
+  obj.Client.UIDStore(set, "+FLAGS", imap.NewFlagSet(`\Deleted`))
+  obj.Client.Expunge(nil)
+}
+
+func (obj *ImapWrapper) RetrieveIWMessages(arguments ...string) ([]IWMessage, bool) {
+  var ids_tab []uint32
+
+  ids_tab, _ = obj.SearchForIds(arguments...)
+
+  messages, err := obj.BuildIWMessagesFromIds(ids_tab)
+  if err != false {
+    return messages, err
+  }
+
+  return messages, err
+}
+
+// arguments: RECENT / UNSEEN / UIDNEXT ...
+func (obj *ImapWrapper) SearchForIds(arguments ...string) ([]uint32, bool) {
+  args_tab := toImapFields(arguments...)
+  fmt.Println("TAB:", args_tab[0])
+  obj.Command, obj.error = imap.Wait(obj.Client.Search(args_tab...))
+  if obj.ReportError("Error while searching for ids:", true) {
+    return nil, false
+  }
+
+  return obj.Command.Data[0].SearchResults(), true
+}
+
+func toImapFields(arguments ...string) ([]imap.Field) {
+  args_tab := []imap.Field{}
+  for _, argument := range arguments {
+    args_tab = append(args_tab, argument)
+  }
+  return args_tab
 }
 
 func init() {}
