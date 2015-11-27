@@ -22,7 +22,7 @@ type GoImapClient struct {
   Port      uint32
 
   // creds
-  Login     string
+  User      string
   Password  string
 }
 
@@ -35,7 +35,7 @@ func (obj *GoImapClient)      Connect() (error) {
 
 func (obj *GoImapClient)      Login() (*imap.Command, error) {
  if obj.Client.State() == imap.Login {
-    cmd, err := imap.Wait(obj.Client.Login(obj.Login, obj.Password))
+    cmd, err := imap.Wait(obj.Client.Login(obj.User, obj.Password))
     return cmd, err
   }
   return nil, nil
