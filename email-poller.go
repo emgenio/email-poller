@@ -20,7 +20,7 @@ const (
   password = "fuckmalife"
 )
 
-func encodeImapMessage(message ImapMessage) ([]byte) {
+func encodeImapMessage(message imapClient.GoImapMessage) ([]byte) {
   out, err := json.Marshal(message)
   if err != nil {
     panic (err)
@@ -30,10 +30,10 @@ func encodeImapMessage(message ImapMessage) ([]byte) {
 
 func main() {
   // instanciate new GoImapClient
-  client = imap.NewClient(hostname, 143, user, password)
+  client = imapClient.NewClient(hostname, 143, user, password)
 
   // Connect to server (Dial)
-  _, err = client.Connect()
+  err = client.Connect()
   defer client.Logout(30 * time.Second)
   // client.Data = nil
 
@@ -46,12 +46,12 @@ func main() {
   // Print box status
   fmt.Print("\nMailbox status:\n", client.Client.Mailbox)
 
-  if !client.Caps["IDLE"] {
+  if !client.SupportIdleCap() {
     fmt.Println("Error: Server does not support IDLE state")
     return
   }
 
-  messagesChan := make(chan []ImapMessage)
+  messagesChan := make(chan []imapClient.GoImapMessage)
 
   // Wait for Incoming ImapMessages and send them to RabbitMQ
   go func() {
@@ -95,105 +95,21 @@ func main() {
   }()
 
   for {
-    fmt.Println("Setting Client in Idle state...")
-    cmd, err = client.Idle()
-    if err != nil {
-      fmt.Println("Error when Idling:", err)
-    }
-    fmt.Println("Waiting for notifications (30 sec timeout not to disconnect the Client, RFC says)")
-    client.Recv(30 * time.Second)
-    if err != nil {
-      fmt.Println("Error when Recv:", err)
-    }
-    fmt.Println("Notifications received...")
-    fmt.Println("Terminating Idle state...")
-    cmd, err = imap.Wait(client.IdleTerm())
-    if err != nil {
-      fmt.Println("Error when Terminating Idle state:", err)
-    }
+    _, _ = client.WaitForNotifications()
 
     ids := []uint32{}
-    for _, resp := range client.Data {
-      switch resp.Label {
-      case "EXISTS":
-        ids = append(ids, imap.AsNumber(resp.Fields[0]))
-      }
-    }
-    fmt.Println("Messages IDS received:", ids)
-    client.Data = nil
+    ids = client.RetrieveMessageIds()
+    // client.Data = nil
 
-    messages, error := FetchMessagesFromIds(client, ids)
+    messages, error := client.RetrieveMessagesFromIds(ids)
     if error != nil {
       fmt.Println("Error FetchMessagesFromIds:", err)
     }
     if len(messages) > 0 {
       messagesChan <- messages
-      ExpungeMessages(client, messages)
+      client.ExpungeMessages(messages)
     }
   }
-
-
-  if false {
-    _ = err
-    _ = cmd
-  }
-}
-
-type ImapMessage struct {
-  UID     uint32
-  Header  []byte
-  Body    []byte
-}
-
-func (obj *ImapMessage) Dump() {
-  fmt.Println("-------------------------------------------------")
-  fmt.Println("UID:\n", obj.UID)
-  fmt.Println("HEADER:\n", string(obj.Header))
-  fmt.Println("BODY:\n", string(obj.Body))
-  fmt.Println("-------------------------------------------------")
-}
-
-func FetchMessagesFromIds(c *imap.Client, ids []uint32) ([]ImapMessage, error) {
-  messages := []ImapMessage{}
-
-  if len(ids) > 0 {
-    set, _ := imap.NewSeqSet("")
-    set.AddNum(ids...)
-
-    cmd, err := imap.Wait(c.Fetch(set, "UID", "RFC822.HEADER", "RFC822.TEXT"))
-    if err != nil {
-      return messages, fmt.Errorf("An error ocurred while fetching unread messages data. ", err)
-    }
-
-    for _, msg := range cmd.Data {
-      attrs := msg.MessageInfo().Attrs
-      message := ImapMessage{
-        UID:    imap.AsNumber(attrs["UID"]),
-        Header: imap.AsBytes(attrs["RFC822.HEADER"]),
-        Body:   imap.AsBytes(attrs["RFC822.TEXT"]),
-      }
-      messages = append(messages, message)
-    }
-  }
-
-  return messages, nil
-}
-
-func ExpungeMessages(c *imap.Client, messages []ImapMessage) (error) {
-  set, _ := imap.NewSeqSet("")
-
-  for _, message := range messages {
-    set.AddNum(message.UID)
-  }
-  _, err := imap.Wait(c.UIDStore(set, "+FLAGS", imap.NewFlagSet(`\Deleted`)))
-  if err != nil {
-    fmt.Println("Error UIDStore:", err)
-  }
-  _, err = imap.Wait(c.Expunge(nil))
-  if err != nil {
-    fmt.Println("Error Expunge:", err)
-  }
-  return err
 }
 
 func failOnError(err error, msg string) {
