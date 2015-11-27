@@ -10,6 +10,7 @@ import (
   "time"
   "log"
   "os"
+  "encoding/json"
 )
 
 type GoImapClient struct {
