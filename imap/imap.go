@@ -183,5 +183,24 @@ func NewMessage(attrs imap.FieldMap) (*GoImapMessage, error) {
 }
 
 func (obj *GoImapMessage) Dump() {
-  fmt.Println("Dump message:", obj.UID)
+  fmt.Println("-----------Dump message-----------")
+  fmt.Println("UID: ", obj.UID)
+  fmt.Println("Body: ", obj.Body)
+}
+
+func (obj *GoImapMessage) encodeMessage() ([]byte) {
+  out, err := json.Marshal(*obj)
+  if err != nil {
+    panic (err)
+  }
+  return out
+}
+
+func (obj *GoImapMessage) decodeMessage(message []byte) (GoImapMessage) {
+  msg := GoImapMessage{}
+  err := json.Unmarshal(message, &msg)
+  if err != nil {
+    panic (err)
+  }
+  return msg
 }
