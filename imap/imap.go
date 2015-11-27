@@ -146,7 +146,7 @@ func NewClient(host string, port uint32, login string, pw string) (*GoImapClient
   return &GoImapClient{
     Hostname: host,
     Port:     port,
-    Login:    login,
+    User:     login,
     Password: pw,
   }
 }
