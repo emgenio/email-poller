@@ -5,14 +5,12 @@ import (
   "time"
   "log"
   "encoding/json"
-  "github.com/mxk/go-imap/imap"
   "github.com/streadway/amqp"
+  "github.com/emgenio/email-poller/imap"
 )
 
 var (
-  client  *imap.Client
-  cmd     *imap.Command
-  rsp     *imap.Response
+  client  *imapClient.GoImapClient
   err     error
 )
 
@@ -31,22 +29,22 @@ func encodeImapMessage(message ImapMessage) ([]byte) {
 }
 
 func main() {
-  client, err = imap.Dial(hostname)
+  // instanciate new GoImapClient
+  client = imap.NewClient(hostname, 143, user, password)
+
+  // Connect to server (Dial)
+  _, err = client.Connect()
   defer client.Logout(30 * time.Second)
+  // client.Data = nil
 
-  // Print server greeting (first response in the unilateral server data queue)
-  fmt.Println("Server says:", client.Data[0].Info)
-  client.Data = nil
-
-  fmt.Println("Client State:", client.State())
   // Authenticate
-  if client.State() == imap.Login {
-    cmd, err = imap.Wait(client.Login(user, password))
-  }
+  _, err = client.Login()
 
   // Open a mailbox (synchronous command - no need for imap.Wait)
-  client.Select("INBOX", true)
-  fmt.Print("\nMailbox status:\n", client.Mailbox)
+  client.SelectMailBox("INBOX", true)
+
+  // Print box status
+  fmt.Print("\nMailbox status:\n", client.Client.Mailbox)
 
   if !client.Caps["IDLE"] {
     fmt.Println("Error: Server does not support IDLE state")

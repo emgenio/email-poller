@@ -4,7 +4,8 @@ import (
   "fmt"
   "github.com/streadway/amqp"
   "log"
-  "encoding/json" 
+  "encoding/json"
+  "github.com/keighl/mandrill"
 )
 
 func failOnError(err error, msg string) {

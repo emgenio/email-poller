@@ -1,4 +1,4 @@
-package imap
+package imapClient
 
 import (
   // Wrapping this package
@@ -13,7 +13,9 @@ import (
 )
 
 type GoImapClient struct {
-  Client    *imap.Client
+  Client  *imap.Client
+  Cmd     *imap.Command
+  Rsp     *imap.Response
 
   // addr
   Hostname  string
@@ -25,10 +27,18 @@ type GoImapClient struct {
 }
 
 // Methods
-func (obj *GoImapClient)      Connect() (*imap.Client, error) {
+func (obj *GoImapClient)      Connect() (error) {
   client, err := imap.Dial(obj.GetFormatedAddr())
   obj.Client = client
-  return obj.Client, err
+  return err
+}
+
+func (obj *GoImapClient)      Login() (*imap.Command, error) {
+ if obj.Client.State() == imap.Login {
+    cmd, err := imap.Wait(obj.Client.Login(obj.Login, obj.Password))
+    return cmd, err
+  }
+  return nil, nil
 }
 
 func (obj *GoImapClient)      Logout(timeout time.Duration) (*imap.Command, error) {
