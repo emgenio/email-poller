@@ -181,3 +181,7 @@ func NewMessage(attrs imap.FieldMap) (*GoImapMessage, error) {
   }
   return &NewMessage, err
 }
+
+func (obj *GoImapMessage) Dump() {
+  fmt.Println("Dump message:", obj.UID)
+}
