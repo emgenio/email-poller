@@ -5,7 +5,8 @@ import (
   "github.com/streadway/amqp"
   "log"
   "encoding/json"
-  "github.com/keighl/mandrill"
+  // "github.com/keighl/mandrill"
+  "./imap"
 )
 
 func failOnError(err error, msg string) {
@@ -55,11 +56,11 @@ func main() {
   forever := make(chan bool)
 
   go func() {
-    mclient := mandrill.ClientWithKey("mHNFsIvmZDbJh1H_vbMTLg")
+    // mclient := mandrill.ClientWithKey("mHNFsIvmZDbJh1H_vbMTLg")
     for d := range msgs {
       log.Println("Received a message:")
       msg := decodeImapMessage(d.Body)
-      forward_message(mclient, msg)
+      // forward_message(mclient, msg)
       msg.Dump()
       d.Ack(false)
     }
@@ -69,19 +70,19 @@ func main() {
   <-forever
 }
 
-func forward_message(mclient *mandrill.Client, message ImapMessage) {
-  msg := &mandrill.Message{}
-  msg.AddRecipient("dan@djcentric.com", "The Big Boss", "to")
-  msg.FromEmail = "proxy.catusse@gmail.com"
-  msg.Subject = "Works? This is a fake Subject"
-  msg.Text = string(message.Body)
+// func forward_message(mclient *mandrill.Client, message ImapMessage) {
+//   msg := &mandrill.Message{}
+//   msg.AddRecipient("dan@djcentric.com", "The Big Boss", "to")
+//   msg.FromEmail = "proxy.catusse@gmail.com"
+//   msg.Subject = "Works? This is a fake Subject"
+//   msg.Text = string(message.Body)
 
-  _, err := mclient.MessagesSend(msg)
-  failOnError(err, "Failed to foward message")
-}
+//   _, err := mclient.MessagesSend(msg)
+//   failOnError(err, "Failed to foward message")
+// }
 
-func decodeImapMessage(message []byte) (ImapMessage) {
-  msg := ImapMessage{}
+func decodeImapMessage(message []byte) (imapClient.GoImapMessage) {
+  msg := imapClient.GoImapMessage{}
   err := json.Unmarshal(message, &msg)
   if err != nil {
     panic (err)
@@ -89,16 +90,16 @@ func decodeImapMessage(message []byte) (ImapMessage) {
   return msg
 }
 
-type ImapMessage struct {
-  UID     uint32
-  Header  []byte
-  Body    []byte
-}
+// type ImapMessage struct {
+//   UID     uint32
+//   Header  []byte
+//   Body    []byte
+// }
 
-func (obj *ImapMessage) Dump() {
-  fmt.Println("-------------------------------------------------")
-  fmt.Println("UID:\n", obj.UID)
-  fmt.Println("HEADER:\n", string(obj.Header))
-  fmt.Println("BODY:\n", string(obj.Body))
-  fmt.Println("-------------------------------------------------")
-}
+// func (obj *ImapMessage) Dump() {
+//   fmt.Println("-------------------------------------------------")
+//   fmt.Println("UID:\n", obj.UID)
+//   fmt.Println("HEADER:\n", string(obj.Header))
+//   fmt.Println("BODY:\n", string(obj.Body))
+//   fmt.Println("-------------------------------------------------")
+// }

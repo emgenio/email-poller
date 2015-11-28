@@ -2,11 +2,13 @@ package main
 
 import (
   "fmt"
-  "time"
+  // "time"
   "log"
   "encoding/json"
   "github.com/streadway/amqp"
-  "github.com/emgenio/email-poller/imap"
+  "./imap"
+  // "time"
+  // "github.com/mxk/go-imap/imap"
 )
 
 var (
@@ -31,17 +33,16 @@ func encodeImapMessage(message imapClient.GoImapMessage) ([]byte) {
 func main() {
   // instanciate new GoImapClient
   client = imapClient.NewClient(hostname, 143, user, password)
-
   // Connect to server (Dial)
   err = client.Connect()
-  defer client.Logout(30 * time.Second)
-  // client.Data = nil
+  // defer client.Logout(30 * time.Second)
+  client.Client.Data = nil
 
   // Authenticate
   _, err = client.Login()
 
   // Open a mailbox (synchronous command - no need for imap.Wait)
-  client.SelectMailBox("INBOX", true)
+  client.SelectMailBox("INBOX", false)
 
   // Print box status
   fmt.Print("\nMailbox status:\n", client.Client.Mailbox)
@@ -76,7 +77,6 @@ func main() {
     for newMessages := range messagesChan {
       count := 0
       for _, msg := range newMessages {
-        msg.Dump()
         err = ch.Publish(
           "",           // exchange
           q.Name,       // routing key
@@ -94,21 +94,46 @@ func main() {
     }
   }()
 
+  // c := client.Client
   for {
-    _, _ = client.WaitForNotifications()
+    _, err := client.WaitForNotifications()
 
-    ids := []uint32{}
-    ids = client.RetrieveMessageIds()
-    // client.Data = nil
+    // fmt.Println("Setting Client in Idle state...")
+    // _, err = c.Idle()
+    // if err != nil {
+    //   fmt.Println("Error when Idling:", err)
+    // }
+    // fmt.Println("Waiting for notifications (30 sec timeout not to disconnect the c, RFC says)")
+    // c.Recv(2 * time.Second)
+    // if err != nil {
+    //   fmt.Println("Error when Recv:", err)
+    // }
+    // fmt.Println("Notifications received...")
+    // fmt.Println("Terminating Idle state...")
+    // _, err = imap.Wait(c.IdleTerm())
+    // if err != nil {
+    //   fmt.Println("Error when Terminating Idle state:", err)
+    // }
 
-    messages, error := client.RetrieveMessagesFromIds(ids)
-    if error != nil {
-      fmt.Println("Error FetchMessagesFromIds:", err)
+    fmt.Println("rcv message")
+    // ids := []uint32{}
+    // ids = client.RetrieveMessageIds()
+    client.Client.Data = nil
+    if false {
+      // _=ids
+      _=err
     }
-    if len(messages) > 0 {
-      messagesChan <- messages
-      client.ExpungeMessages(messages)
-    }
+    // messages, error := client.RetrieveMessagesFromIds(ids)
+    // for _, msg := range messages {
+    //   msg.Dump()
+    // }
+    // if error != nil {
+    //   fmt.Println("Error FetchMessagesFromIds:", err)
+    // }
+    // if len(messages) > 0 {
+    //   messagesChan <- messages
+    //   client.ExpungeMessages(messages)
+    // }
   }
 }
 

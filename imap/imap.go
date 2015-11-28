@@ -60,24 +60,30 @@ func (obj *GoImapClient)      SupportIdleCap() bool {
   return obj.Client.Caps["IDLE"]
 }
 
-func (obj *GoImapClient)      WaitForNotifications() (cmd *imap.Command, err error) {
+func (obj GoImapClient)      WaitForNotifications() (cmd *imap.Command, err error) {
 
   // Setting Client in Idle state
   cmd, err = obj.Client.Idle()
   if err != nil {
+    fmt.Println("IDLE:", err)
     return cmd, err
   }
 
   // Waiting for notifications... 30 sec timeout not to disconnect the Client, RFC says
   // Client gets disconnected passed 29 minutes if no notifs
-  err = obj.Client.Recv(30 * time.Second)
+  err = obj.Client.Recv(3 * time.Second)
   if err != nil {
+    fmt.Println("Recv:", err)
     return cmd, err
   }
 
   // Notifications received or timed out
   // Terminating Client Idle stance. Make the call synchronous
   cmd, err = imap.Wait(obj.Client.IdleTerm())
+  if err != nil {
+    fmt.Println("IdleTerm:", err)
+  }
+  fmt.Println("Recv:", err)
   return cmd, err
 }
 
@@ -168,13 +174,14 @@ type GoImapMessage struct {
 
 // Constructor
 func NewMessage(attrs imap.FieldMap) (*GoImapMessage, error) {
+  fmt.Println("attrs:", attrs)
   m, err := mail.ReadMessage(bytes.NewReader(imap.AsBytes(attrs["RFC822.HEADER"])))
   if err != nil {
     return nil, err
   }
   NewMessage := GoImapMessage{
     UID:      imap.AsNumber(attrs["UID"]),
-    Body:     string(imap.AsBytes(attrs["RFC822.BODY"])),
+    Body:     string(imap.AsBytes(attrs["RFC822.TEXT"])),
     Subject:  m.Header.Get("Subject"),
     To:       m.Header.Get("To"),
     From:     m.Header.Get("From"),
@@ -185,8 +192,13 @@ func NewMessage(attrs imap.FieldMap) (*GoImapMessage, error) {
 
 func (obj *GoImapMessage) Dump() {
   fmt.Println("-----------Dump message-----------")
-  fmt.Println("UID: ", obj.UID)
-  fmt.Println("Body: ", obj.Body)
+  fmt.Println("UID: ",      obj.UID)
+  fmt.Println("Subject: ",  obj.Subject)
+  fmt.Println("To: ",       obj.To)
+  fmt.Println("From: ",     obj.From)
+  fmt.Println("Date: ",     obj.Date)
+  fmt.Println("Body: ",     obj.Body)
+  fmt.Println("----------------------------------")
 }
 
 func (obj *GoImapMessage) encodeMessage() ([]byte) {
