@@ -2,10 +2,11 @@ package main
 
 import (
   "fmt"
-  "github.com/streadway/amqp"
   "log"
+
+  "github.com/streadway/amqp"
   "github.com/keighl/mandrill"
-  "./imap"
+  "github.com/emgenio/email-poller/imap"
 )
 
 func fatalOnError(err error, msg string) {

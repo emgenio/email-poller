@@ -4,8 +4,9 @@ import (
   "fmt"
   "time"
   "log"
+
   "github.com/streadway/amqp"
-  "./imap"
+  "github.com/emgenio/email-poller/imap"
 )
 
 var (
@@ -57,7 +58,7 @@ func pushIncomingMessagesToQueue(messagesChan chan []imapClient.GoImapMessage) {
             ContentType:  "toext/plain",
             Body:         msg.EncodeAsBytes(),
           })
-  
+
         if err != nil {
           fatalOnError(err, "Failed to publish a message")
         } else {
