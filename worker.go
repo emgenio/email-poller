@@ -4,12 +4,11 @@ import (
   "fmt"
   "github.com/streadway/amqp"
   "log"
-  "encoding/json"
-  // "github.com/keighl/mandrill"
+  "github.com/keighl/mandrill"
   "./imap"
 )
 
-func failOnError(err error, msg string) {
+func fatalOnError(err error, msg string) {
   if err != nil {
     log.Fatalf("%s: %s", msg, err)
     panic(fmt.Sprintf("%s: %s", msg, err))
@@ -18,11 +17,11 @@ func failOnError(err error, msg string) {
 
 func main() {
   conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-  failOnError(err, "Failed to connect to RabbitMQ")
+  fatalOnError(err, "Failed to connect to RabbitMQ")
   defer conn.Close()
 
   ch, err := conn.Channel()
-  failOnError(err, "Failed to open a channel")
+  fatalOnError(err, "Failed to open a channel")
   defer ch.Close()
 
   q, err := ch.QueueDeclare(
@@ -33,14 +32,14 @@ func main() {
     false,        // no-wait
     nil,          // arguments
   )
-  failOnError(err, "Failed to declare a queue")
+  fatalOnError(err, "Failed to declare a queue")
 
   err = ch.Qos(
     1,     // prefetch count
     0,     // prefetch size
     false, // global
   )
-  failOnError(err, "Failed to set QoS")
+  fatalOnError(err, "Failed to set QoS")
 
   msgs, err := ch.Consume(
     q.Name, // queue
@@ -51,55 +50,33 @@ func main() {
     false,  // no-wait
     nil,    // args
   )
-  failOnError(err, "Failed to register a consumer")
+  fatalOnError(err, "Failed to register a consumer")
 
   forever := make(chan bool)
 
   go func() {
-    // mclient := mandrill.ClientWithKey("mHNFsIvmZDbJh1H_vbMTLg")
-    for d := range msgs {
-      log.Println("Received a message:")
-      msg := decodeImapMessage(d.Body)
-      // forward_message(mclient, msg)
-      msg.Dump()
-      d.Ack(false)
+    mclient := mandrill.ClientWithKey("mHNFsIvmZDbJh1H_vbMTLg")
+    for rawMsg := range msgs {
+      decodedMsg := imapClient.NewMessageFromBytes(rawMsg.Body)
+      forwardMessage(mclient, decodedMsg)
+      rawMsg.Ack(false)
     }
   }()
-
-  log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-  <-forever
+  <- forever
 }
 
-// func forward_message(mclient *mandrill.Client, message ImapMessage) {
-//   msg := &mandrill.Message{}
-//   msg.AddRecipient("dan@djcentric.com", "The Big Boss", "to")
-//   msg.FromEmail = "proxy.catusse@gmail.com"
-//   msg.Subject = "Works? This is a fake Subject"
-//   msg.Text = string(message.Body)
+func forwardMessage(mclient *mandrill.Client, message *imapClient.GoImapMessage) {
+  msg := &mandrill.Message{}
+  msg.AddRecipient("axel.catusse@gmail.com", "Axel Catusse", "to")
 
-//   _, err := mclient.MessagesSend(msg)
-//   failOnError(err, "Failed to foward message")
-// }
+  msg.FromEmail = "proxy.catusse@gmail.com"
+  msg.Subject   = message.Subject
+  msg.Text      = message.Body
 
-func decodeImapMessage(message []byte) (imapClient.GoImapMessage) {
-  msg := imapClient.GoImapMessage{}
-  err := json.Unmarshal(message, &msg)
+  _, err := mclient.MessagesSend(msg)
   if err != nil {
-    panic (err)
+    fmt.Println("forwardMessage:", err)
+  } else {
+    fmt.Println("Message forwarded successfully")
   }
-  return msg
 }
-
-// type ImapMessage struct {
-//   UID     uint32
-//   Header  []byte
-//   Body    []byte
-// }
-
-// func (obj *ImapMessage) Dump() {
-//   fmt.Println("-------------------------------------------------")
-//   fmt.Println("UID:\n", obj.UID)
-//   fmt.Println("HEADER:\n", string(obj.Header))
-//   fmt.Println("BODY:\n", string(obj.Body))
-//   fmt.Println("-------------------------------------------------")
-// }

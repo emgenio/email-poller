@@ -60,31 +60,29 @@ func (obj *GoImapClient)      SupportIdleCap() bool {
   return obj.Client.Caps["IDLE"]
 }
 
-func (obj GoImapClient)      WaitForNotifications() (cmd *imap.Command, err error) {
+func (obj GoImapClient)      WaitForNotifications() (cmd *imap.Command) {
 
   // Setting Client in Idle state
-  cmd, err = obj.Client.Idle()
+  cmd, err := obj.Client.Idle()
   if err != nil {
-    fmt.Println("IDLE:", err)
-    return cmd, err
+    fmt.Println("WaitForNotifications:Recv:Idle", err)
+    return cmd
   }
 
   // Waiting for notifications... 30 sec timeout not to disconnect the Client, RFC says
   // Client gets disconnected passed 29 minutes if no notifs
   err = obj.Client.Recv(3 * time.Second)
-  if err != nil {
-    fmt.Println("Recv:", err)
-    return cmd, err
+  if err != imap.ErrTimeout && err != nil {
+    fmt.Println("WaitForNotifications:Recv:", err)
   }
 
   // Notifications received or timed out
   // Terminating Client Idle stance. Make the call synchronous
   cmd, err = imap.Wait(obj.Client.IdleTerm())
   if err != nil {
-    fmt.Println("IdleTerm:", err)
+    fmt.Println("WaitForNotifications:IdleTerm:", err)
   }
-  fmt.Println("Recv:", err)
-  return cmd, err
+  return cmd
 }
 
 // Retrieve message ids after notificatioon
@@ -118,7 +116,7 @@ func (obj *GoImapClient)      ExpungeMessages(messages []GoImapMessage) (error) 
 }
 
 // Retrieve messages from ids
-func (obj *GoImapClient)      RetrieveMessagesFromIds(ids []uint32) ([]GoImapMessage, error) {
+func (obj *GoImapClient)      RetrieveMessagesFromIds(ids []uint32) ([]GoImapMessage) {
   messages := []GoImapMessage{}
 
   if len(ids) > 0 {
@@ -127,20 +125,22 @@ func (obj *GoImapClient)      RetrieveMessagesFromIds(ids []uint32) ([]GoImapMes
 
     cmd, err := imap.Wait(obj.Client.Fetch(set, "UID", "RFC822.HEADER", "RFC822.TEXT"))
     if err != nil {
-      return messages, err
+      fmt.Println("RetrieveMessagesFromIds:Fetch:", err)
+      return messages
     }
 
     for _, msg := range cmd.Data {
       message, err := NewMessage(msg.MessageInfo().Attrs)
       if err != nil {
-        return messages, err
+        fmt.Println("RetrieveMessagesFromIds:NewMessage:", err)
+        return messages
       }
       messages = append(messages, *message)
     }
-    return messages, err
+    return messages
   }
 
-  return messages, nil
+  return messages
 }
 
 func init() {
@@ -172,14 +172,13 @@ type GoImapMessage struct {
   Body    string
 }
 
-// Constructor
+// Constructors
 func NewMessage(attrs imap.FieldMap) (*GoImapMessage, error) {
-  fmt.Println("attrs:", attrs)
   m, err := mail.ReadMessage(bytes.NewReader(imap.AsBytes(attrs["RFC822.HEADER"])))
   if err != nil {
     return nil, err
   }
-  NewMessage := GoImapMessage{
+  newMessage := GoImapMessage{
     UID:      imap.AsNumber(attrs["UID"]),
     Body:     string(imap.AsBytes(attrs["RFC822.TEXT"])),
     Subject:  m.Header.Get("Subject"),
@@ -187,7 +186,12 @@ func NewMessage(attrs imap.FieldMap) (*GoImapMessage, error) {
     From:     m.Header.Get("From"),
     Date:     m.Header.Get("Date"),
   }
-  return &NewMessage, err
+  return &newMessage, err
+}
+
+func NewMessageFromBytes(bytes []byte) (*GoImapMessage) {
+  newMessage := &GoImapMessage{}
+  return newMessage.DecodeFromBytes(bytes)
 }
 
 func (obj *GoImapMessage) Dump() {
@@ -201,19 +205,19 @@ func (obj *GoImapMessage) Dump() {
   fmt.Println("----------------------------------")
 }
 
-func (obj *GoImapMessage) encodeMessage() ([]byte) {
+func (obj *GoImapMessage) EncodeAsBytes() ([]byte) {
   out, err := json.Marshal(*obj)
   if err != nil {
-    panic (err)
+    fmt.Println("EncodeAsBytes:", err)
   }
   return out
 }
 
-func (obj *GoImapMessage) decodeMessage(message []byte) (GoImapMessage) {
+func (obj *GoImapMessage) DecodeFromBytes(message []byte) (*GoImapMessage) {
   msg := GoImapMessage{}
   err := json.Unmarshal(message, &msg)
   if err != nil {
-    panic (err)
+    fmt.Println("DecodeFromBytes:", err)
   }
-  return msg
+  return &msg
 }
