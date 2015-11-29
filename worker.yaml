@@ -1,7 +1,0 @@
-mandrill:
-  clientkey:  mHNFsIvmZDbJh1H_vbMTLg
-  from:       proxy@gmail.com
-
-amqp:
-  hostname:     amqp://guest:guest@localhost:5672/
-  messagequeue: email_poller_messages
