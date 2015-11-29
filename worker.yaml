@@ -1,5 +1,5 @@
 mandrill:
-  clientkey:  mHNFsIvmZDbJh1H_vbMTLg
+  clientkey:  
   from:       proxy@gmail.com
 
 amqp:
