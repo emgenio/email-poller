@@ -1,7 +1,7 @@
 imap:
   hostname: localhost
   port:     143
-  login:    axl
+  login:    
   password:
 
 amqp:
