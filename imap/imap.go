@@ -60,7 +60,7 @@ func (obj *GoImapClient)      SupportIdleCap() bool {
   return obj.Client.Caps["IDLE"]
 }
 
-func (obj GoImapClient)      WaitForNotifications() (cmd *imap.Command) {
+func (obj GoImapClient)      WaitForNotifications(timeout time.Duration) (cmd *imap.Command) {
 
   // Setting Client in Idle state
   cmd, err := obj.Client.Idle()
@@ -71,7 +71,7 @@ func (obj GoImapClient)      WaitForNotifications() (cmd *imap.Command) {
 
   // Waiting for notifications... 30 sec timeout not to disconnect the Client, RFC says
   // Client gets disconnected passed 29 minutes if no notifs
-  err = obj.Client.Recv(3 * time.Second)
+  err = obj.Client.Recv(timeout)
   if err != imap.ErrTimeout && err != nil {
     fmt.Println("WaitForNotifications:Recv:", err)
   }
