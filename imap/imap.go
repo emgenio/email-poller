@@ -60,7 +60,7 @@ func (obj *GoImapClient)      SupportIdleCap() bool {
   return obj.Client.Caps["IDLE"]
 }
 
-func (obj GoImapClient)      WaitForNotifications(timeout time.Duration) (cmd *imap.Command) {
+func (obj GoImapClient)       WaitForNotifications(timeout time.Duration) (cmd *imap.Command) {
 
   // Setting Client in Idle state
   cmd, err := obj.Client.Idle()
