@@ -35,12 +35,12 @@ func pushIncomingMessagesToQueue(messagesChan chan []imapClient.GoImapMessage) {
     defer ch.Close()
 
     q, err := ch.QueueDeclare(
-      "", // name
-      true,    // durable
-      false,   // delete when usused
-      false,   // exclusive
-      false,   // no-wait
-      nil,     // arguments
+      "",       // exchange
+      true,     // durable
+      false,    // delete when usused
+      false,    // exclusive
+      false,    // no-wait
+      nil,      // arguments
     )
     fatalOnError(err, "Failed to declare a queue")
 
@@ -54,7 +54,7 @@ func pushIncomingMessagesToQueue(messagesChan chan []imapClient.GoImapMessage) {
           false,
           amqp.Publishing{
             DeliveryMode: amqp.Persistent,
-            ContentType:  "toext/plain",
+            ContentType:  "text/plain",
             Body:         msg.EncodeAsBytes(),
           })
 
