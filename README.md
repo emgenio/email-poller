@@ -6,10 +6,10 @@ When started, email poller sets the IMAP client on an Idle stance (IMAP Protocol
 
 The Poller is based on this [go package IMAP client](https://github.com/mxk/go-imap).
 
-# The Worker
+## The Worker
 The worker has the role of the Consumer. It instanciates a Rabbit MQ queue specified in the worker yaml file, consume all message that have been push into this queue and forward them to their destination via [Mandrill](https://www.mandrill.com/) (an email delivery api from Mailchimp).
 
-# Running the stack
+## Running the stack
 First, you need to have a configurated SMTP and IMAP server. I would sugger you [Postfix](http://www.postfix.org/) and [dovecot](http://www.dovecot.org/) which are the most common used servers for this kind of setup.
 
 Clone the git repository:
