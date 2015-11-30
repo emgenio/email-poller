@@ -10,13 +10,13 @@ The Poller is based on this [go package IMAP client](https://github.com/mxk/go-i
 1. First, you need to have a configurated SMTP and IMAP server. I would suggest you [Postfix](http://www.postfix.org/) and [dovecot](http://www.dovecot.org/) which are the most common used servers for this kind of setup.
 
 2. Then clone the git repository:
-```
-git clone https://github.com/emgenio/email-poller && cd email-poller
-```
+  ```
+  git clone https://github.com/emgenio/email-poller && cd email-poller
+  ```
 3. Finally compile and execute:
-```
-make && ./build/email-poller
-```
+  ```
+  make && ./build/email-poller
+  ```
 
 ## Licence
 MIT
