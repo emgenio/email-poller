@@ -18,6 +18,8 @@ func fatalOnError(err error, msg string) {
 }
 
 type WorkerConfig struct {
+  Environment     string
+
   Amqp struct {
     Hostname      string
     MessageQueue  string
@@ -88,7 +90,12 @@ func main() {
 
 func forwardMessage(mclient *mandrill.Client, message *imapClient.GoImapMessage) {
   msg := &mandrill.Message{}
-  msg.AddRecipient("axel.catusse@gmail.com", "Axel Catusse", "to")
+
+  if cfg.Environment == "development" {
+    msg.AddRecipient("axel.catusse@gmail.com", "Axel Catusse", "to")
+  } else {
+    msg.AddRecipient(message.To, "", "to")
+  }
 
   msg.FromEmail = cfg.Mandrill.From
   msg.Subject   = message.Subject

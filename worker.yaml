@@ -1,3 +1,5 @@
+environment: development
+
 mandrill:
   clientkey:  
   from:       proxy@gmail.com
