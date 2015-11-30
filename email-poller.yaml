@@ -1,9 +1,0 @@
-imap:
-  hostname: localhost
-  port:     143
-  login:    
-  password:
-
-amqp:
-  hostname:     amqp://guest:guest@localhost:5672/
-  messagequeue: email_poller_messages

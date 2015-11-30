@@ -100,7 +100,7 @@ type PollerConfig struct {
 }
 
 func init() {
-  gconf.LoadConfig("./email-poller.yaml", &cfg)
+  gconf.LoadConfig("./config.yaml", &cfg)
 }
 
 func main() {
