@@ -1,7 +1,7 @@
 # Email-poller
 An IMAP email poller written in go to send emails into a Rabbit MQ message queue.
 
-## How is works
+## How it works
 When started, email poller sets the IMAP client on an Idle stance (IMAP Protocol feature), waiting for notifications. When the mailbox monitoring receives new incoming messages, it serializes them into raw datas and publishes them to a rabbit MQ message queue.
 
 The Poller is based on this [go package IMAP client](https://github.com/mxk/go-imap).
