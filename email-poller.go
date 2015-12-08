@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -15,7 +16,8 @@ var (
 )
 
 const (
-	Timeout = 30 * time.Second
+	Timeout           = 30 * time.Second
+	defaultConfigFile = "./config.yaml"
 )
 
 func fatalOnError(err error, msg string) {
@@ -100,7 +102,10 @@ type PollerConfig struct {
 }
 
 func init() {
-	loadConfig("./config.yaml", &config)
+	configPath := flag.String("config", defaultConfigFile, "path to the configuration file.")
+	flag.Parse()
+	fmt.Println("Loading configuration file", *configPath)
+	loadConfig(*configPath, &config)
 }
 
 func main() {
