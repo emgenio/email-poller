@@ -8,7 +8,7 @@ The Poller is based on this [go package IMAP client](https://github.com/mxk/go-i
 
 ## How to install
 1. First, you need to have two configurated servers (both SMTP and IMAP). I would suggest you [Postfix](http://www.postfix.org/) and [dovecot](http://www.dovecot.org/) which are the most common used servers for this kind of setup.
-2. Then get the package: `o get github.com/emgenio/email-poller`
+2. Then get the package: `go get github.com/emgenio/email-poller`
 3. Finally run the command: `email-poller`
 
 ## Usage
